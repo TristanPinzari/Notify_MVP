@@ -39,6 +39,8 @@ function Home() {
   const [topicOverlayValue, setTopicOverlayValue] = useState("");
   const [classMembers, setClassMembers] = useState({});
   const [grammarCheck, setGrammarCheck] = useState(true);
+  const [factCheck, setFactCheck] = useState(true);
+  const [extraInfo, setExtraInfo] = useState(false);
   const [bulletFormat, setBulletFormat] = useState("");
   const [compiledDocData, setCompiledDocData] = useState({});
   const [isCompiling, setIsCompiling] = useState(false);
@@ -149,7 +151,7 @@ function Home() {
       currentClass.members.map(async (uid) => {
         const snap = await getDoc(doc(db, "users", uid));
         return snap.exists() ? snap.data() : null;
-      })
+      }),
     );
     setClassMembers(membersData.filter(Boolean));
   }
@@ -232,7 +234,7 @@ function Home() {
       } catch (error) {
         console.error(
           "Caught error when adding user to class or when updating user's classes list:",
-          error
+          error,
         );
       }
     }
@@ -249,7 +251,7 @@ function Home() {
     if (!classData.members.includes(userData.uid)) {
       toastRef.current.addToast(
         "error",
-        "You are no longer a member of this class."
+        "You are no longer a member of this class.",
       );
       await RemoveClassFromUser(classData.className, classData.classCode);
       return;
@@ -263,7 +265,7 @@ function Home() {
     if (currentClass.topics?.newTopicName) {
       toastRef.current.addToast(
         "error",
-        "A topic with this name already exists."
+        "A topic with this name already exists.",
       );
       return;
     }
@@ -320,7 +322,7 @@ function Home() {
       console.error("Caught error while pinning uploaded file:", error);
       toastRef.current.addToast(
         "error",
-        "Something went wrong while uploading file."
+        "Something went wrong while uploading file.",
       );
       return;
     }
@@ -344,7 +346,7 @@ function Home() {
       });
       toastRef.current.addToast(
         "success",
-        "Successfully pinned compiled document."
+        "Successfully pinned compiled document.",
       );
       if (oldPinnedId) deleteFileFromStorage(oldPinnedId);
     } catch (error) {
@@ -377,7 +379,7 @@ function Home() {
   async function isCollectionUrlValid(doc) {
     const valid = await isUrlValid(doc.fileUrl);
     if (!valid) {
-      deleteFileFromCollection(doc);
+      // deleteFileFromCollection(doc);
     }
     return valid;
   }
@@ -407,13 +409,13 @@ function Home() {
         });
         toastRef.current.addToast(
           "success",
-          "Successfully added file to collection."
+          "Successfully added file to collection.",
         );
       } catch (error) {
         console.error("Caught error while pinning uploaded file:", error);
         toastRef.current.addToast(
           "error",
-          "Something went wrong while uploading file."
+          "Something went wrong while uploading file.",
         );
         return;
       }
@@ -477,7 +479,7 @@ function Home() {
       } catch (error) {
         console.error(
           "Caught error when removing class from user or when updating class' members list:",
-          error
+          error,
         );
       }
     }
@@ -493,122 +495,174 @@ function Home() {
     newData[className][topicName] = await generateCompiledDoc(
       currentTopic.collection,
       bulletFormat,
-      grammarCheck
+      grammarCheck,
+      factCheck,
+      extraInfo,
     );
     setCompiledDocData(newData);
     setIsCompiling(false);
   }
 
+  const formatDate = (timestamp) => {
+    if (!timestamp) return;
+    return new Date(timestamp).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
   return (
-    <div className="page">
+    <div className="relative flex w-screen h-screen overflow-hidden bg-[#0f0e0d] font-[DM_Sans]">
       <ToastContainer position="bottom" ref={toastRef} />
-      {visibleOverlay == "classOverlay" && (
+      <style>{`
+      @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap');
+      * { font-family: 'DM Sans', sans-serif; }
+      @keyframes flash { 0%,100%{opacity:1} 50%{opacity:0.3} }
+      @keyframes slideUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+      .flash { animation: flash 1.2s ease infinite; }
+      .slide-up { animation: slideUp 0.3s ease forwards; }
+      ::-webkit-scrollbar { width: 3px; }
+      ::-webkit-scrollbar-thumb { background: #b45309; border-radius: 99px; }
+    `}</style>
+      {visibleOverlay === "classOverlay" && (
         <>
-          <div id="classOverlay" className="overlay">
-            <div className="container">
+          <div className="absolute z-20 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-80 rounded-2xl border border-white/10 bg-[#1a1714] shadow-2xl shadow-black/60 flex flex-col overflow-hidden slide-up">
+            <div className="flex border-b border-white/10">
+              {["join", "create"].map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setJoinOrCreate(mode)}
+                  className={`flex-1 py-3 text-sm capitalize tracking-widest transition-colors ${
+                    joinOrCreate === mode
+                      ? "text-amber-400 bg-amber-400/5 font-semibold"
+                      : "text-white/40 hover:text-white/70"
+                  } border-none bg-transparent cursor-pointer`}
+                >
+                  {mode}
+                </button>
+              ))}
+            </div>
+            <div className="p-6 flex flex-col gap-4">
+              <input
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-amber-400/50 transition-colors"
+                placeholder={
+                  joinOrCreate === "join"
+                    ? "Enter class code"
+                    : "Enter class name"
+                }
+                value={classOverlayValue}
+                onChange={(e) => setClassOverlayValue(e.target.value)}
+              />
               <button
-                className="joinOrCreate"
-                style={{
-                  fontWeight: joinOrCreate == "join" ? "bold" : "normal",
-                }}
-                onClick={() => setJoinOrCreate("join")}
+                className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-sm font-semibold tracking-wide transition-colors cursor-pointer border-none"
+                onClick={
+                  joinOrCreate === "join" ? JoinNewClass : CreateNewClass
+                }
               >
-                Join
-              </button>
-              <button
-                className="joinOrCreate"
-                style={{
-                  fontWeight: joinOrCreate == "create" ? "bold" : "normal",
-                }}
-                onClick={() => setJoinOrCreate("create")}
-              >
-                Create
+                {joinOrCreate === "join" ? "Join Class" : "Create Class"}
               </button>
             </div>
-            <input
-              placeholder={
-                joinOrCreate == "join" ? "Enter class code" : "Enter class name"
-              }
-              value={classOverlayValue}
-              onChange={(e) => setClassOverlayValue(e.target.value)}
-            />
-            <button
-              className="special"
-              onClick={joinOrCreate == "join" ? JoinNewClass : CreateNewClass}
-            >
-              {joinOrCreate == "join" ? "Join" : "Create"}
-            </button>
           </div>
           <div
-            className="overlayBackground"
+            className="absolute inset-0 z-10 bg-black/50 backdrop-blur-sm"
             onClick={() => setVisibleOverlay("none")}
-          ></div>
+          />
         </>
       )}
 
-      {visibleOverlay == "topicOverlay" && (
+      {visibleOverlay === "topicOverlay" && (
         <>
-          <div id="topicOverlay" className="overlay">
-            <p id="topicOverlayLabel">Create topic</p>
-            <input
-              placeholder="Enter topic name"
-              value={topicOverlayValue}
-              onChange={(e) => setTopicOverlayValue(e.target.value)}
-            />
-            <button className="special" onClick={CreateNewTopic}>
-              Create
-            </button>
+          <div className="p-6 absolute z-20 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-80 rounded-2xl border border-white/10 bg-[#1a1714] shadow-2xl shadow-black/60 overflow-hidden slide-up">
+            <div className="pb-2">
+              <p className="text-white/60 text-xs tracking-widest uppercase mb-1">
+                New Topic
+              </p>
+              <p className="text-white text-xl font-semibold font-special!">
+                Create a topic
+              </p>
+            </div>
+            <div className="flex flex-col gap-4">
+              <input
+                className="my-2 w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-amber-400/50 transition-colors"
+                placeholder="Enter topic name"
+                value={topicOverlayValue}
+                onChange={(e) => setTopicOverlayValue(e.target.value)}
+              />
+              <button
+                className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-sm font-semibold tracking-wide transition-colors cursor-pointer border-none"
+                onClick={CreateNewTopic}
+              >
+                Create Topic
+              </button>
+            </div>
           </div>
           <div
-            className="overlayBackground"
+            className="absolute inset-0 z-10 bg-black/50 backdrop-blur-sm"
             onClick={() => setVisibleOverlay("none")}
-          ></div>
+          />
         </>
       )}
 
-      <div id="panelsContainer">
-        <p id="title">otify</p>
+      {/* ── Left Sidebar ──────────────────────────────────── */}
+      <div className="flex flex-col w-52 h-full bg-[#131110] border-r border-white/6 shrink-0">
+        {/* Logo */}
+        <div className="h-14 flex items-center px-5 border-b border-white/6">
+          <span className="text-2xl text-white tracking-tight font-special!">
+            <span className="text-primary font-special!">N</span>otify
+          </span>
+        </div>
 
-        <div id="classPanel" className="sidePanel">
-          <div className="labelIconContainer">
-            <p className="directoryLabel">Classes</p>
+        {/* Classes */}
+        <div className="flex flex-col flex-1 overflow-hidden border-b border-white/6">
+          <div className="flex items-center justify-between px-5 pt-4 pb-2">
+            <span className="text-[10px] uppercase tracking-[0.15em] text-white/30 font-semibold">
+              Classes
+            </span>
             <GoPlus
-              className="goPlusIcon"
+              className="text-white/30 hover:text-amber-400 cursor-pointer transition-colors text-base"
               onClick={() => setVisibleOverlay("classOverlay")}
             />
           </div>
-
-          <div className="directoryScroll">
-            {classes &&
-              classes.length > 0 &&
-              classes.map((cls, index) => (
-                <button
-                  key={index}
-                  onClick={() => SelectClass(cls.className, cls.classCode)}
-                  style={{
-                    fontWeight: `${
-                      currentClass.classCode == cls.classCode
-                        ? "bold"
-                        : "normal"
-                    }`,
-                  }}
+          <div className="flex flex-col overflow-y-auto px-2 pb-2">
+            {classes?.map((cls, index) => (
+              <button
+                key={index}
+                onClick={() => SelectClass(cls.className, cls.classCode)}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all border-none cursor-pointer flex items-center gap-2 ${
+                  currentClass.classCode === cls.classCode
+                    ? "bg-amber-400/10 text-amber-400"
+                    : "text-white/50 hover:text-white/80 hover:bg-white/5 bg-transparent"
+                }`}
+              >
+                {currentClass.classCode === cls.classCode && (
+                  <span className="w-1 h-4 rounded-full bg-amber-400 shrink-0" />
+                )}
+                <span
+                  className={
+                    currentClass.classCode === cls.classCode
+                      ? "font-medium"
+                      : ""
+                  }
                 >
                   {cls.className}
-                </button>
-              ))}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
 
-        <div id="topicPanel" className="sidePanel">
-          <div className="labelIconContainer">
-            <p className="directoryLabel">Topics&nbsp;</p>
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <div className="flex items-center justify-between px-5 pt-4 pb-2">
+            <span className="text-[10px] uppercase tracking-[0.15em] text-white/30 font-semibold">
+              Topics
+            </span>
             <GoPlus
-              className="goPlusIcon"
+              className="text-white/30 hover:text-amber-400 cursor-pointer transition-colors text-base"
               onClick={() => setVisibleOverlay("topicOverlay")}
             />
           </div>
-
-          <div className="directoryScroll">
+          <div className="flex flex-col overflow-y-auto px-2 pb-2">
             {currentClass.topics &&
               Object.keys(currentClass.topics).map((key, index) => {
                 const topic = currentClass.topics[key];
@@ -616,15 +670,24 @@ function Home() {
                   <button
                     key={index}
                     onClick={() => setCurrentTopic(topic)}
-                    style={{
-                      fontWeight: `${
-                        currentTopic?.topicName == topic.topicName
-                          ? "bold"
-                          : "normal"
-                      }`,
-                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all border-none cursor-pointer flex items-center gap-2 ${
+                      currentTopic?.topicName === topic.topicName
+                        ? "bg-amber-400/10 text-amber-400"
+                        : "text-white/50 hover:text-white/80 hover:bg-white/5 bg-transparent"
+                    }`}
                   >
-                    {topic.topicName}
+                    {currentTopic?.topicName === topic.topicName && (
+                      <span className="w-1 h-4 rounded-full bg-amber-400 shrink-0" />
+                    )}
+                    <span
+                      className={
+                        currentTopic?.topicName === topic.topicName
+                          ? "font-medium"
+                          : ""
+                      }
+                    >
+                      {topic.topicName}
+                    </span>
                   </button>
                 );
               })}
@@ -632,225 +695,301 @@ function Home() {
         </div>
       </div>
 
-      <div id="rightContainer">
-        <div id="directoryPanel">
-          <p id="classDirectory">{currentClass.className}</p>
-          <p id="topicDirectory">{currentTopic?.topicName}</p>
-          <p id="tabDirectory">{currentTab}</p>
-          <PiSignOut id="signOut" onClick={signOutUser} />
+      {/* ── Main Area ─────────────────────────────────────── */}
+      <div className="flex flex-col flex-1 h-full overflow-hidden">
+        {/* Top Bar */}
+        <div className="h-14 flex items-center justify-between px-6 border-b border-white/6 bg-[#0f0e0d] shrink-0">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-white/70 font-medium">
+              {currentClass.className}
+            </span>
+            {currentTopic?.topicName && (
+              <>
+                <span className="text-white/20">/</span>
+                <span className="text-white/50">{currentTopic.topicName}</span>
+              </>
+            )}
+            {currentTab && (
+              <>
+                <span className="text-white/20">/</span>
+                <span className="text-amber-400/80 text-xs tracking-wide">
+                  {currentTab}
+                </span>
+              </>
+            )}
+          </div>
+          <PiSignOut
+            className="text-white/30 hover:text-amber-400 text-xl cursor-pointer transition-colors"
+            onClick={signOutUser}
+          />
         </div>
 
-        <div id="tabdiv">
-          <div id="tabBoxes">
-            <div id="tabButtons">
-              <button
-                className="tabButton"
-                onClick={() => setCurrentTab("Pinned Doc")}
-                style={{
-                  fontWeight: `${
-                    currentTab == "Pinned Doc" ? "bold" : "normal"
-                  }`,
-                }}
-              >
-                Pinned Doc
-              </button>
-              <button
-                className="tabButton"
-                onClick={() => setCurrentTab("Compiled Doc")}
-                style={{
-                  fontWeight: `${
-                    currentTab == "Compiled Doc" ? "bold" : "normal"
-                  }`,
-                }}
-              >
-                Compiled Doc
-              </button>
-              <button
-                className="tabButton"
-                onClick={() => setCurrentTab("Collection")}
-                style={{
-                  fontWeight: `${
-                    currentTab == "Collection" ? "bold" : "normal"
-                  }`,
-                }}
-              >
-                Collection
-              </button>
-              <button
-                className="tabButton"
-                onClick={() => setCurrentTab("Members")}
-                style={{
-                  fontWeight: `${currentTab == "Members" ? "bold" : "normal"}`,
-                }}
-              >
-                Members
-              </button>
-              <button
-                className="tabButton"
-                onClick={() => setCurrentTab("Class Settings")}
-                style={{
-                  fontWeight: `${
-                    currentTab == "Class Settings" ? "bold" : "normal"
-                  }`,
-                }}
-              >
-                Class Settings
-              </button>
+        {/* Tabs + Content */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Tab Rail */}
+          <div className="flex flex-col w-44 shrink-0 bg-[#111009] border-r border-white/6">
+            <div className="flex flex-col py-3 border-b border-white/6">
+              {[
+                "Pinned Doc",
+                "Compiled Doc",
+                "Collection",
+                "Members",
+                "Class Settings",
+              ].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setCurrentTab(tab)}
+                  className={`text-left px-5 py-2.5 text-xs tracking-wide transition-all border-none cursor-pointer relative ${
+                    currentTab === tab
+                      ? "text-amber-400 bg-amber-400/5 font-semibold"
+                      : "text-white/40 hover:text-white/70 bg-transparent"
+                  }`}
+                >
+                  {currentTab === tab && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-amber-400 rounded-r-full" />
+                  )}
+                  {tab}
+                </button>
+              ))}
             </div>
 
-            {currentTab == "Pinned Doc" && (
-              <div className="tabBox custom pinnedDoc">
-                <p>Pinned by: {currentTopic?.pinnedDoc?.pinnedBy}</p>
-                <p>Pinned date: {currentTopic?.pinnedDoc?.pinnedDate}</p>
-                <label>
-                  Pin new
+            {/* Tab Controls Panel */}
+            <div className="flex-1 flex flex-col justify-center px-4 py-4 gap-3">
+              {currentTab === "Pinned Doc" && (
+                <>
+                  <p className="text-white/30 text-[11px] leading-relaxed">
+                    By:{" "}
+                    <span className="text-white/60">
+                      {currentTopic?.pinnedDoc?.pinnedBy || "—"}
+                    </span>
+                  </p>
+                  <p className="text-white/30 text-[11px] leading-relaxed">
+                    Date:{" "}
+                    <span className="text-white/60">
+                      {formatDate(currentTopic?.pinnedDoc?.pinnedDate) || "—"}
+                    </span>
+                  </p>
+                  <label className="w-full py-2 rounded-lg border border-white/10 text-white/50 text-xs text-center hover:border-amber-400/40 hover:text-amber-400 cursor-pointer transition-all">
+                    Pin new PDF
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      className="hidden"
+                      onChange={uploadPinnedDoc}
+                    />
+                  </label>
+                  <button
+                    onClick={pinCompiled}
+                    className="w-full py-2 rounded-lg border border-white/10 text-white/50 text-xs hover:border-amber-400/40 hover:text-amber-400 cursor-pointer transition-all bg-transparent"
+                  >
+                    Pin compiled
+                  </button>
+                </>
+              )}
+              {currentTab === "Compiled Doc" && (
+                <>
+                  <label className="flex items-center gap-2 text-white/50 text-xs cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={grammarCheck}
+                      onChange={(e) => setGrammarCheck(e.target.checked)}
+                      className="accent-amber-400"
+                    />
+                    Grammar check
+                  </label>
+                  <label className="flex items-center gap-2 text-white/50 text-xs cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={factCheck}
+                      onChange={(e) => setFactCheck(e.target.checked)}
+                      className="accent-amber-400"
+                    />
+                    Fact check
+                  </label>
+                  <label className="flex items-center gap-2 text-white/50 text-xs cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={extraInfo}
+                      onChange={(e) => setExtraInfo(e.target.checked)}
+                      className="accent-amber-400"
+                    />
+                    Extra information
+                  </label>
+                  <label className="flex items-center gap-2 text-white/50 text-xs cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={bulletFormat}
+                      onChange={(e) => setBulletFormat(e.target.checked)}
+                      className="accent-amber-400"
+                    />
+                    Bullet format
+                  </label>
+                  <button
+                    onClick={compileDoc}
+                    className="w-full py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-xs font-semibold cursor-pointer transition-colors border-none mt-1"
+                  >
+                    Compile
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 overflow-hidden bg-[#0c0b0a]">
+            {currentTab === "Pinned Doc" && (
+              <div className="w-full h-full overflow-y-auto px-16 py-12 relative">
+                {currentTopic?.pinnedDoc?.fileUrl &&
+                isPinnedUrlValid(currentTopic.pinnedDoc.fileUrl) ? (
+                  <iframe
+                    className="w-full h-full border-none"
+                    src={currentTopic.pinnedDoc.fileUrl.replace(
+                      "/download",
+                      "/view",
+                    )}
+                  />
+                ) : currentTopic?.pinnedDoc?.innerHTML ? (
+                  <>
+                    <div className="absolute left-20 top-12 bottom-12 w-px bg-linear-to-b from-amber-400/30 via-amber-400/10 to-transparent" />
+                    <div
+                      className="w-full h-full overflow-y-auto px-16 py-12 max-w-4xl mx-auto [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-white [&_h2]:mt-6 [&_h2]:mb-2 [&_p]:text-sm [&_p]:text-white/75 [&_p]:leading-relaxed [&_p]:mb-2 [&_ul]:mb-3 [&_ul]:pl-5 [&_li]:text-sm [&_li]:text-white/75 [&_li]:leading-relaxed [&_li]:list-disc [&_li]:mb-1"
+                      dangerouslySetInnerHTML={{
+                        __html: currentTopic.pinnedDoc.innerHTML,
+                      }}
+                    />
+                  </>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <p className="text-white/20 text-sm">
+                      No document pinned yet.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {currentTab === "Collection" && (
+              <div className="w-full h-full flex flex-col p-6 gap-4">
+                <label className="w-full h-24 flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-xl hover:border-amber-400/40 hover:bg-amber-400/5 cursor-pointer transition-all group">
+                  <span className="text-white/20 text-xs group-hover:text-amber-400/60 transition-colors">
+                    Drop PDFs here or click to upload
+                  </span>
                   <input
                     type="file"
                     accept="application/pdf"
-                    style={{ display: "none" }}
-                    onChange={uploadPinnedDoc}
+                    onChange={uploadToCollection}
+                    multiple
+                    className="hidden"
                   />
                 </label>
-                <button onClick={pinCompiled}>Pin compiled</button>
+                <div className="flex-1 overflow-auto rounded-xl border border-white/6 bg-[#111009]">
+                  {currentTopic?.collection &&
+                    Object.keys(currentTopic.collection).map((key, index) => {
+                      const doc = currentTopic.collection[key];
+                      if (isCollectionUrlValid(doc)) {
+                        return (
+                          <div
+                            key={key}
+                            className="flex items-center gap-4 px-5 py-3 border-b border-white/4 hover:bg-white/2 transition-colors"
+                          >
+                            <span className="text-white/20 text-xs w-5 shrink-0">
+                              {index + 1}
+                            </span>
+                            <a
+                              href={doc.fileUrl.replace("/download", "/view")}
+                              target="_blank"
+                              className="flex-1 text-amber-400/80 hover:text-amber-400 text-xs truncate transition-colors"
+                            >
+                              {doc.fileName || "Document link"}
+                            </a>
+                            <span className="text-white/30 text-xs shrink-0">
+                              {doc.uploadedBy}
+                            </span>
+                            <span className="text-white/20 text-xs shrink-0">
+                              {formatDate(doc.uploadedDate)}
+                            </span>
+                            <label className="flex items-center gap-1.5 text-white/40 text-xs cursor-pointer shrink-0">
+                              <input
+                                type="checkbox"
+                                checked={!doc.noCompile}
+                                onChange={(e) =>
+                                  collectionToggleCompile(e, doc.fileId)
+                                }
+                                className="accent-amber-400"
+                              />
+                              Compile
+                            </label>
+                            <MdDeleteForever
+                              className="text-white/20 hover:text-red-400 text-base cursor-pointer transition-colors shrink-0"
+                              onClick={() => deleteFileFromCollection(doc)}
+                            />
+                          </div>
+                        );
+                      }
+                    })}
+                </div>
               </div>
             )}
 
-            {currentTab == "Compiled Doc" && (
-              <div className="tabBox custom compiledDoc">
-                <p>Compiled by: {}</p>
-                <p>Compiled date: {}</p>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={grammarCheck}
-                    onChange={(e) => setGrammarCheck(e.target.checked)}
+            {currentTab === "Members" && (
+              <div className="w-full h-full flex flex-col p-6 gap-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-white/40 text-xs uppercase tracking-widest">
+                    Class members
+                  </p>
+                  <button
+                    onClick={leaveClass}
+                    className="px-4 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs hover:bg-red-500/20 transition-colors cursor-pointer"
+                  >
+                    Leave class
+                  </button>
+                </div>
+                <div className="flex-1 overflow-auto rounded-xl border border-white/6 bg-[#111009]">
+                  {classMembers.map((userData, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-4 px-5 py-3 border-b border-white/4 hover:bg-white/2 transition-colors"
+                    >
+                      <span className="text-white/20 text-xs w-5 shrink-0">
+                        {index + 1}
+                      </span>
+                      <span className="flex-1 text-white/70 text-xs">
+                        {userData.username}
+                      </span>
+                      <span className="text-white/30 text-xs">
+                        {userData.email}
+                      </span>
+                      <MdDeleteForever className="text-white/20 hover:text-red-400 text-base cursor-pointer transition-colors shrink-0" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {currentTab === "Compiled Doc" && (
+              <div className="w-full h-full overflow-y-auto px-16 py-12 relative">
+                <div className="absolute left-20 top-12 bottom-12 w-px bg-linear-to-b from-amber-400/30 via-amber-400/10 to-transparent" />
+                {isCompiling ? (
+                  <div className="mx-12 flash flex items-center gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                    <p className="text-white/40 text-sm">
+                      Generating your document…
+                    </p>
+                  </div>
+                ) : (
+                  <div
+                    className="w-full h-full overflow-y-auto px-16 py-12 max-w-4xl mx-auto [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-white [&_h2]:mt-6 [&_h2]:mb-2 [&_p]:text-sm [&_p]:text-white/75 [&_p]:leading-relaxed [&_p]:mb-2 [&_ul]:mb-3 [&_ul]:pl-5 [&_li]:text-sm [&_li]:text-white/75 [&_li]:leading-relaxed [&_li]:list-disc [&_li]:mb-1"
+                    dangerouslySetInnerHTML={{
+                      __html:
+                        compiledDocData[currentClass?.className]?.[
+                          currentTopic?.topicName
+                        ] || "<p>No document compiled yet.</p>",
+                    }}
                   />
-                  Grammar check
-                </label>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={bulletFormat}
-                    onChange={(e) => setBulletFormat(e.target.checked)}
-                  />
-                  Bullet format
-                </label>
-                <button onClick={compileDoc}>Compile</button>
+                )}
               </div>
             )}
           </div>
-
-          {currentTab == "Pinned Doc" && (
-            <div className="tab">
-              {currentTopic?.pinnedDoc?.fileUrl &&
-              isPinnedUrlValid(currentTopic.pinnedDoc.fileUrl) ? (
-                <iframe
-                  src={currentTopic.pinnedDoc.fileUrl.replace(
-                    "/download",
-                    "/view"
-                  )}
-                />
-              ) : currentTopic?.pinnedDoc?.innerHTML ? (
-                <div
-                  id="compiledDocTab"
-                  dangerouslySetInnerHTML={{
-                    __html: currentTopic.pinnedDoc.innerHTML,
-                  }}
-                />
-              ) : null}
-            </div>
-          )}
-
-          {currentTab == "Collection" && (
-            <div className="tab">
-              <div id="fileDropBox">
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={uploadToCollection}
-                  multiple
-                />
-              </div>
-              <div className="listScroll">
-                {currentTopic?.collection &&
-                  Object.keys(currentTopic.collection).map((key, index) => {
-                    const doc = currentTopic.collection[key];
-                    if (isCollectionUrlValid(doc)) {
-                      return (
-                        <div key={key} className="listItem">
-                          <p>{index + 1}</p>
-                          <a
-                            href={doc.fileUrl.replace("/download", "/view")}
-                            target="_blank"
-                          >
-                            {doc.fileName || "Document link"}
-                          </a>
-                          <p>{doc.uploadedBy}</p>
-                          <p>{doc.uploadedDate}</p>
-                          <label>
-                            <input
-                              type="checkbox"
-                              id="subscribe"
-                              name="subscribe"
-                              checked={!doc.noCompile}
-                              onChange={(e) =>
-                                collectionToggleCompile(e, doc.fileId)
-                              }
-                            />
-                            Compile
-                          </label>
-                          <MdDeleteForever
-                            className="deleteIcon"
-                            onClick={() => deleteFileFromCollection(doc)}
-                          />
-                        </div>
-                      );
-                    }
-                  })}
-              </div>
-            </div>
-          )}
-
-          {currentTab == "Members" && (
-            <div className="tab">
-              <div id="membersButtons">
-                <button id="leaveButton" onClick={leaveClass}>
-                  Leave class
-                </button>
-              </div>
-              <div className="listScroll">
-                {classMembers.map((userData, index) => {
-                  return (
-                    <div key={index} className="listItem">
-                      <p>{index + 1}</p>
-                      <p>{userData.username}</p>
-                      <p>{userData.email}</p>
-                      <MdDeleteForever className="deleteIcon" />
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {currentTab === "Compiled Doc" && (
-            <div className="tab" id="compiledDocTab">
-              {isCompiling ? (
-                <div className="flash">
-                  <p>Gemini is busy generating your response...</p>
-                </div>
-              ) : (
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html:
-                      compiledDocData[currentClass?.className]?.[
-                        currentTopic?.topicName
-                      ] || "No document compiled yet.",
-                  }}
-                />
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>
