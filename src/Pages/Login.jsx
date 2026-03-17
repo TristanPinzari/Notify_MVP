@@ -23,6 +23,7 @@ function Login() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [hasToggled, setHasToggled] = useState(false);
 
   async function handleClick() {
     if (action == "signup" && username.length < 3) {
@@ -45,6 +46,11 @@ function Login() {
       (clearTimeout(displayTimer), clearTimeout(errorTimer));
     };
   }, [error]);
+
+  const handleToggle = () => {
+    setHasToggled(true);
+    setAction(action === "login" ? "signup" : "login");
+  };
 
   return (
     <div className="relative w-screen h-screen overflow-hidden flex items-center justify-center bg-[#0d0c0b]">
@@ -173,7 +179,6 @@ function Login() {
     }
   `}</style>
 
-      {/* ── Background mesh ───────────────────────────── */}
       <svg
         className="mesh absolute inset-0 w-full h-full pointer-events-none"
         viewBox="0 0 1000 700"
@@ -300,7 +305,7 @@ function Login() {
         <div className="divider" />
 
         <div
-          className={`username-wrap ${action === "signup" ? "open" : "closed"}`}
+          className={`username-wrap ${!hasToggled ? "hidden" : action === "signup" ? "open" : "closed"}`}
         >
           <div className="field">
             <CiUser className="ficon" />
@@ -343,11 +348,7 @@ function Login() {
 
         <div className="toggle-row">
           {action === "login" ? "No account yet? " : "Already have one? "}
-          <a
-            onClick={() =>
-              action === "login" ? setAction("signup") : setAction("login")
-            }
-          >
+          <a onClick={handleToggle}>
             {action === "login" ? "Sign up" : "Login"}
           </a>
         </div>

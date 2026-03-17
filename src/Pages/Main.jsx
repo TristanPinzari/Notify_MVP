@@ -835,7 +835,6 @@ function Home() {
             </div>
           </div>
 
-          {/* Main Content */}
           <div className="flex-1 overflow-hidden bg-[#0c0b0a]">
             {currentTab === "Pinned Doc" && (
               <div className="w-full h-full overflow-y-auto px-16 py-12 relative">
@@ -852,7 +851,7 @@ function Home() {
                   <>
                     <div className="absolute left-20 top-12 bottom-12 w-px bg-linear-to-b from-amber-400/30 via-amber-400/10 to-transparent" />
                     <div
-                      className="w-full h-full overflow-y-auto px-16 py-12 max-w-4xl mx-auto [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-white [&_h2]:mt-6 [&_h2]:mb-2 [&_p]:text-sm [&_p]:text-white/75 [&_p]:leading-relaxed [&_p]:mb-2 [&_ul]:mb-3 [&_ul]:pl-5 [&_li]:text-sm [&_li]:text-white/75 [&_li]:leading-relaxed [&_li]:list-disc [&_li]:mb-1"
+                      className="mask-[linear-gradient(to_bottom,transparent_0%,black_2%,black_98%,transparent_100%)] [&>*:first-child]:mt-2! w-full h-full overflow-y-auto px-16 max-w-4xl mx-auto [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-white [&_h2]:mt-6 [&_h2]:mb-2 [&_p]:text-sm [&_p]:text-white/75 [&_p]:leading-relaxed [&_p]:mb-2 [&_ul]:mb-3 [&_ul]:pl-5 [&_li]:text-sm [&_li]:text-white/75 [&_li]:leading-relaxed [&_li]:list-disc [&_li]:mb-1"
                       dangerouslySetInnerHTML={{
                         __html: currentTopic.pinnedDoc.innerHTML,
                       }}
@@ -978,7 +977,7 @@ function Home() {
                   </div>
                 ) : (
                   <div
-                    className="w-full h-full overflow-y-auto px-16 py-12 max-w-4xl mx-auto [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-white [&_h2]:mt-6 [&_h2]:mb-2 [&_p]:text-sm [&_p]:text-white/75 [&_p]:leading-relaxed [&_p]:mb-2 [&_ul]:mb-3 [&_ul]:pl-5 [&_li]:text-sm [&_li]:text-white/75 [&_li]:leading-relaxed [&_li]:list-disc [&_li]:mb-1"
+                    className="mask-[linear-gradient(to_bottom,transparent_0%,black_2%,black_98%,transparent_100%)] [&>*:first-child]:mt-2! w-full h-full overflow-y-auto px-16 max-w-4xl mx-auto [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-white [&_h2]:mt-6 [&_h2]:mb-2 [&_p]:text-sm [&_p]:text-white/75 [&_p]:leading-relaxed [&_p]:mb-2 [&_ul]:mb-3 [&_ul]:pl-5 [&_li]:text-sm [&_li]:text-white/75 [&_li]:leading-relaxed [&_li]:list-disc [&_li]:mb-1"
                     dangerouslySetInnerHTML={{
                       __html:
                         compiledDocData[currentClass?.className]?.[
