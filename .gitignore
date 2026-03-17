@@ -12,9 +12,6 @@ dist
 dist-ssr
 *.local
 
-#video
-Notify\src\assets\rainworldvideo.mp4
-
 # Environment files
 .env
 
