@@ -1,16 +1,9 @@
-# React + Vite
+Notify was born out of a specific frustration: history lectures where information flies by and materials aren't posted online, leaving students stranded if they miss a single point. Built with React, Node.js, and Firebase, the app is designed to bridge these gaps without assuming students have access to expensive textbooks or external resources. Its core strength is localization; using a simple course code system, Notify creates a private space for actual classmates to very easily group up without directly interacting. Unlike massive note-sharing databases that are often cluttered with irrelevant documents from different schools, Notify ensures the only content you see is directly tied to the specific lecture you just attended.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+To ensure reliability, Notify allows a classroom to pool their collective notes into a single collection. Using Gemini AI, the app can then synthesize these into a "master document," ensuring that as long as the class as a whole captured the information, the final document is complete. Critically, all AI features are entirely optional to protect academic integrity. Students can choose to toggle off fact-checking or grammar fixes, leaving the app as a purely organizational tool that simply sorts and compiles peer notes. This flexibility allows Notify to function either as an advanced AI study assistant or as a traditional, student-led collaboration hub, depending on the specific needs of the class.
 
-Currently, two official plugins are available:
+Notify is a very practical solution to a very real problem, and during the Canadian Tech Summit of 2026, many students testified that they would use it if it were to come into production. Currently Notify, while it does work, serves as a proof of concept, and in the future I plan to assemble a team to make the production version with significant improvements and more functionality and features.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Built with React, Node, and Firebase.
 
-## React Compiler
-
-The React Compiler is not enabled on this template. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+https://tristanpinzari.github.io/Notify/#/login
