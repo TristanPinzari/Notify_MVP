@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { extractTextFromPDF } from "./pdf";
+import { extractTextFromPDF, getTranscript } from "./pdf";
 
 const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_KEY });
 
@@ -82,7 +82,9 @@ async function generateText(
 
   let lastResponse = "";
   const promises = Object.keys(collection).map((key) =>
-    extractTextFromPDF(collection[key].fileUrl),
+    collection[key].isVideoUrl
+      ? getTranscript(collection[key].videoId)
+      : extractTextFromPDF(collection[key].fileUrl),
   );
   const texts = await Promise.all(promises);
   for (const text of texts) {

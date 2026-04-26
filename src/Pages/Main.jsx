@@ -44,6 +44,7 @@ function Home() {
   const [bulletFormat, setBulletFormat] = useState("");
   const [compiledDocData, setCompiledDocData] = useState({});
   const [isCompiling, setIsCompiling] = useState(false);
+  const [videoUrl, setVideoUrl] = useState("");
 
   useEffect(() => {
     //Keeps track of whether the user is still logged in or not
@@ -423,6 +424,36 @@ function Home() {
     e.target.value = null;
   }
 
+  const addVideoToCollection = async () => {
+    if (!videoUrl.trim()) return;
+    try {
+      const url = new URL(videoUrl);
+      const videoId = url.searchParams.get("v");
+      await updateDoc(doc(db, "classes", currentClass.classCode), {
+        [`topics.${currentTopic.topicName}.collection.${videoId}`]: {
+          uploadedBy: userData.username,
+          uploadedDate: Date.now(),
+          videoUrl: videoUrl,
+          videoId: videoId,
+          isVideoUrl: true,
+          noCompile: false,
+        },
+      });
+      toastRef.current.addToast(
+        "success",
+        "Successfully added file to collection.",
+      );
+    } catch (error) {
+      console.error("Caught error while pinning uploaded file:", error);
+      toastRef.current.addToast(
+        "error",
+        "Something went wrong while uploading file.",
+      );
+      return;
+    }
+    setVideoUrl("");
+  };
+
   async function deleteFileFromStorage(file_id) {
     try {
       await storage.deleteFile({
@@ -438,10 +469,10 @@ function Home() {
   function deleteFileFromCollection(document) {
     try {
       updateDoc(doc(db, "classes", currentClass.classCode), {
-        [`topics.${currentTopic.topicName}.collection.${document.fileId}`]:
+        [`topics.${currentTopic.topicName}.collection.${document.fileId || document.videoId}`]:
           deleteField(),
       });
-      deleteFileFromStorage(document.fileId);
+      if (document.fileId) deleteFileFromStorage(document.fileId);
       toastRef.current.addToast("success", "File deleted from DB.");
     } catch (e) {
       toastRef.current.addToast("error", "Something went wrong.");
@@ -881,10 +912,67 @@ function Home() {
                     className="hidden"
                   />
                 </label>
+
+                <div className="w-full flex gap-2">
+                  <input
+                    type="text"
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    placeholder="Paste a YouTube video URL..."
+                    className="flex-1 bg-transparent border border-white/10 rounded-xl px-4 py-3 text-xs text-white/60 placeholder-white/20 hover:border-amber-400/40 focus:border-amber-400/40 focus:outline-none transition-all"
+                  />
+                  <button
+                    onClick={addVideoToCollection}
+                    className="px-4 py-3 rounded-xl border border-white/10 text-white/40 text-xs hover:border-amber-400/40 hover:text-amber-400/60 transition-all"
+                  >
+                    Add
+                  </button>
+                </div>
+
                 <div className="flex-1 overflow-auto rounded-xl border border-white/6 bg-[#111009]">
                   {currentTopic?.collection &&
                     Object.keys(currentTopic.collection).map((key, index) => {
                       const doc = currentTopic.collection[key];
+                      if (doc.isVideoUrl) {
+                        return (
+                          <div
+                            key={key}
+                            className="flex items-center gap-4 px-5 py-3 border-b border-white/4 hover:bg-white/2 transition-colors"
+                          >
+                            <span className="text-white/20 text-xs w-5 shrink-0">
+                              {index + 1}
+                            </span>
+                            <a
+                              href={doc.videoUrl}
+                              target="_blank"
+                              className="flex-1 text-amber-400/80 hover:text-amber-400 text-xs truncate transition-colors"
+                            >
+                              {doc.videoUrl || "Video link"}
+                            </a>
+                            <span className="text-white/30 text-xs shrink-0">
+                              {doc.uploadedBy}
+                            </span>
+                            <span className="text-white/20 text-xs shrink-0">
+                              {formatDate(doc.uploadedDate)}
+                            </span>
+                            <label className="flex items-center gap-1.5 text-white/40 text-xs cursor-pointer shrink-0">
+                              <input
+                                type="checkbox"
+                                checked={!doc.noCompile}
+                                onChange={(e) =>
+                                  collectionToggleCompile(e, doc.videoId)
+                                }
+                                className="accent-amber-400"
+                              />
+                              Compile
+                            </label>
+                            <MdDeleteForever
+                              className="text-white/20 hover:text-red-400 text-base cursor-pointer transition-colors shrink-0"
+                              onClick={() => deleteFileFromCollection(doc)}
+                            />
+                          </div>
+                        );
+                      }
                       if (isCollectionUrlValid(doc)) {
                         return (
                           <div

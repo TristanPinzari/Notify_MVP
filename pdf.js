@@ -20,3 +20,9 @@ export async function extractTextFromPDF(url) {
     .replace(/[^\w\s]/g, "")
     .trim();
 }
+
+export async function getTranscript(videoId) {
+  const res = await fetch(`http://localhost:3001/transcript/${videoId}`);
+  const transcript = await res.json();
+  return transcript;
+}
